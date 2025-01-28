@@ -1,0 +1,2 @@
+# editorconfig-cli
+editorconfig cli
