@@ -1,0 +1,23 @@
+[project]
+name = "editorconfig-cli"
+version = "0.0.0"
+description = "editorconfig cli"
+authors = [
+    {name = "Hamlet",email = "hamlets849@gmail.com"}
+]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.scripts]
+editorconfig-cli = 'editorconfig_cli.main:main'
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+# [tool.poetry]
+# packages = [
+#     { include = "src/editorconfig_cli" },
+# ]
