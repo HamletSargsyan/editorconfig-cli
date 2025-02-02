@@ -66,10 +66,12 @@ def get_files(
 
     for file in path.iterdir():
         if file.is_dir():
-            if not is_ignored(file, exclude):
+            if not is_ignored(file, exclude, use_gitignore, gitignore_patterns):
                 result.extend(get_files(file, exclude, use_gitignore))
         else:
-            if not is_ignored(file, exclude) and not is_binary(file):
+            if not is_ignored(
+                file, exclude, use_gitignore, gitignore_patterns
+            ) and not is_binary(file):
                 result.append(file)
     return result
 
