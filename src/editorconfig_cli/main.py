@@ -2,7 +2,11 @@ import argparse
 import re
 import sys
 from pathlib import Path
-from typing import NoReturn
+
+from tinylogging import Logger
+
+logger = Logger("editorconfig-cli")
+logger.formatter.template = "{level} | {message}"
 
 
 def is_binary(file: Path) -> bool:
@@ -42,6 +46,8 @@ def get_gitignore_patterns(path: Path) -> list[str]:
             result = [
                 line.strip() for line in f if line.strip() and not line.startswith("#")
             ]
+    else:
+        logger.warning("No .gitignore file found at the specified path.")
     return result
 
 
@@ -118,7 +124,7 @@ def format(file: Path, config: dict[str, dict[str, str]]):
         with file.open("r", encoding=charset) as f:
             lines = f.readlines()
     except UnicodeDecodeError:
-        warn(f"Unable to decode {file.name} with charset {charset}")
+        logger.warning(f"Unable to decode {file.name} with charset {charset}")
         return
 
     formatted_lines = []
@@ -154,15 +160,6 @@ def find_main_config(paths: list[Path]) -> dict[str, dict[str, str]] | None:
     return None
 
 
-def error(message: str, error_code: int = 1) -> NoReturn:
-    print(f"ERROR: {message}")
-    sys.exit(error_code)
-
-
-def warn(message: str):
-    print(f"WARN: {message}")
-
-
 def main():
     parser = argparse.ArgumentParser(description="Format files based on .editorconfig")
     parser.add_argument("path", type=Path, help="Path to the directory to format")
@@ -188,11 +185,12 @@ def main():
     config = find_main_config(files)
 
     if not config:
-        error("No .editorconfig file found")
+        logger.error("No .editorconfig file found")
+        sys.exit(1)
 
     for file in files:
         if file.is_file():
-            print(file)
+            logger.info(f"Formatting file: {file}")
             format(file, config)
 
 
