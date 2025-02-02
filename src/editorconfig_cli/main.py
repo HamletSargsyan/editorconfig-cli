@@ -1,12 +1,54 @@
-import re
 import argparse
-from io import StringIO
+import re
+import sys
 from pathlib import Path
-from glob import glob
+from typing import NoReturn
+
+
+def is_binary(file: Path) -> bool:
+    try:
+        with file.open("rb") as f:
+            chunk = f.read(1024)
+            if b"\0" in chunk:
+                return True
+    except Exception:
+        return True
+    return False
+
+
+def is_ignored(
+    file: Path,
+    exclude: list[Path],
+    use_gitignore: bool = True,
+    gitignore_patterns: list[str] | None = None,
+) -> bool:
+    if not gitignore_patterns:
+        gitignore_patterns = []
+
+    if file in exclude:
+        return True
+    if use_gitignore:
+        for pattern in gitignore_patterns:
+            if file.match(pattern):
+                return True
+    return False
+
+
+def get_gitignore_patterns(path: Path) -> list[str]:
+    gitignore_file = path / ".gitignore"
+    result = []
+    if gitignore_file.exists():
+        with gitignore_file.open() as f:
+            result = [
+                line.strip() for line in f if line.strip() and not line.startswith("#")
+            ]
+    return result
 
 
 def get_files(
-    path: Path, exclude: list[Path] | None = None, use_gitignore: bool = False
+    path: Path,
+    exclude: list[Path] | None = None,
+    use_gitignore: bool = False,
 ) -> list[Path]:
     if exclude is None:
         exclude = []
@@ -14,40 +56,14 @@ def get_files(
 
     gitignore_patterns = []
     if use_gitignore:
-        gitignore_file = path / ".gitignore"
-        if gitignore_file.exists():
-            with gitignore_file.open() as f:
-                gitignore_patterns = [
-                    line.strip()
-                    for line in f
-                    if line.strip() and not line.startswith("#")
-                ]
-
-    def is_binary(file: Path) -> bool:
-        try:
-            with file.open("rb") as f:
-                chunk = f.read(1024)
-                if b"\0" in chunk:
-                    return True
-        except Exception:
-            return True
-        return False
-
-    def is_ignored(file: Path) -> bool:
-        if file in exclude:
-            return True
-        if use_gitignore:
-            for pattern in gitignore_patterns:
-                if file.match(pattern):
-                    return True
-        return False
+        gitignore_patterns.extend(get_gitignore_patterns(path))
 
     for file in path.iterdir():
         if file.is_dir():
-            if not is_ignored(file):
+            if not is_ignored(file, exclude):
                 result.extend(get_files(file, exclude, use_gitignore))
         else:
-            if not is_ignored(file) and not is_binary(file):
+            if not is_ignored(file, exclude) and not is_binary(file):
                 result.append(file)
     return result
 
@@ -98,9 +114,12 @@ def format(file: Path, config: dict[str, dict[str, str]]):
     insert_final_newline = (
         section.get("insert_final_newline", "false").lower() == "true"
     )
-
-    with file.open("r", encoding=charset) as f:
-        lines = f.readlines()
+    try:
+        with file.open("r", encoding=charset) as f:
+            lines = f.readlines()
+    except UnicodeDecodeError:
+        warn(f"Unable to decode {file.name} with charset {charset}")
+        return
 
     formatted_lines = []
     for line in lines:
@@ -135,6 +154,15 @@ def find_main_config(paths: list[Path]) -> dict[str, dict[str, str]] | None:
     return None
 
 
+def error(message: str, error_code: int = 1) -> NoReturn:
+    print(f"ERROR: {message}")
+    sys.exit(error_code)
+
+
+def warn(message: str):
+    print(f"WARN: {message}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Format files based on .editorconfig")
     parser.add_argument("path", type=Path, help="Path to the directory to format")
@@ -153,6 +181,8 @@ def main():
     path: Path = args.path
     exclude: list[Path] = args.exclude
     use_gitignore: bool = args.use_gitignore
+
+    exclude.append(Path(".git"))
 
     files = get_files(path, exclude, use_gitignore=use_gitignore)
     config = find_main_config(files)
