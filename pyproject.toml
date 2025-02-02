@@ -1,17 +1,20 @@
 [project]
 name = "editorconfig-cli"
-version = "0.0.0"
+version = "0.1.0"
 description = "editorconfig cli"
-authors = [
-    {name = "Hamlet",email = "hamlets849@gmail.com"}
-]
-license = {text = "MIT"}
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = ["tinylogging (>=5.0.1,<6.0.0)"]
 
+[[project.authors]]
+name = "Hamlet"
+email = "hamlets849@gmail.com"
+
+[project.license]
+text = "MIT"
+
 [project.scripts]
-editorconfig-cli = 'editorconfig_cli.main:main'
+editorconfig-cli = "editorconfig_cli.main:main"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
