@@ -8,9 +8,12 @@ import changelog
 import tomlkit as toml
 from semver import Version
 
-with open("version") as f:
-    old_version = Version.parse(f.read())
-    version = old_version
+with open("pyproject.toml", "r") as f:
+    pyproject = toml.load(f).unwrap()
+
+old_version = Version.parse(pyproject["project"]["version"])
+
+version = old_version
 
 parser = argparse.ArgumentParser(description="Bump version and create a release.")
 parser.add_argument(
@@ -74,11 +77,6 @@ if choice != "y":
 run_command("task lint && task format")
 
 
-with open("version", "w") as f:
-    f.write(str(version))
-
-with open("pyproject.toml", "r") as f:
-    pyproject = toml.load(f).unwrap()
 pyproject["project"]["version"] = str(version)
 
 with open("pyproject.toml", "w") as f:
