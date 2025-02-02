@@ -188,7 +188,7 @@ def main():
     config = find_main_config(files)
 
     if not config:
-        raise FileNotFoundError("No .editorconfig file found")
+        error("No .editorconfig file found")
 
     for file in files:
         if file.is_file():
